@@ -57,7 +57,7 @@
         </div>
         <div class="card metric-card">
           <div class="metric-label">Dimensions</div>
-          <div class="metric-value">—</div>
+          <div class="metric-value">{{ dimensionCount }}</div>
         </div>
         <div class="metric-card accent-card">
           <div class="metric-label" style="color:rgba(255,255,255,0.75)">Best score</div>
@@ -113,7 +113,7 @@
                 <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
                   <span style="color:var(--text-primary)">{{ v.name }}</span>
                   <span style="color:var(--text-secondary)">
-                    {{ progress[v.id]?.completed ?? 0 }} / {{ progress[v.id]?.total ?? totalCases }}
+                    {{ progress[v.id] ?? 0 }} / {{ totalCases }}
                   </span>
                 </div>
                 <el-progress
@@ -181,13 +181,37 @@ const triggering = ref(false)
 const exporting = ref(false)
 const animateBars = ref(false)
 
-const { progress, start: startSSE, stop: stopSSE } = useRunProgress(experimentId)
+const { progress: sseProgress, start: startSSE, stop: stopSSE } = useRunProgress(experimentId)
+
+// Bug 2 fix: derive progress from results when experiment is completed
+const progressFromResults = computed(() => {
+  if (experiment.value?.status !== 'completed') return {}
+  const map: Record<number, number> = {}
+  for (const r of results.value) {
+    map[r.variant_id] = (map[r.variant_id] ?? 0) + 1
+  }
+  return map
+})
+
+const progress = computed(() =>
+  experiment.value?.status === 'completed' ? progressFromResults.value : sseProgress.value,
+)
 
 // Total cases for progress display
 const totalCases = computed(() => {
-  const vals = Object.values(progress.value)
+  const vals = Object.values(sseProgress.value)
   if (vals.length > 0 && vals[0].total) return vals[0].total
   return testCases.value.length
+})
+
+// Bug 1 fix: count unique dimension IDs from dimension_scores across all results
+const dimensionCount = computed(() => {
+  if (results.value.length === 0) return '—'
+  const ids = new Set<number>()
+  for (const r of results.value) {
+    for (const ds of r.dimension_scores) ids.add(ds.dimension_id)
+  }
+  return ids.size || '—'
 })
 
 const bestScore = computed(() => {
@@ -204,7 +228,13 @@ const bestVariantName = computed(() => {
 const goldenCount = computed(() => results.value.filter((r) => r.is_golden).length)
 
 function progressPct(variantId: number) {
-  const p = progress.value[variantId]
+  if (experiment.value?.status === 'completed') {
+    const completed = progressFromResults.value[variantId] ?? 0
+    const total = testCases.value.length
+    if (!total) return 100
+    return Math.round((completed / total) * 100)
+  }
+  const p = sseProgress.value[variantId]
   if (!p || !p.total) return 0
   return Math.round((p.completed / p.total) * 100)
 }
@@ -336,10 +366,8 @@ onMounted(() => {
 }
 
 .metric-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-secondary);
   margin-bottom: 6px;
 }

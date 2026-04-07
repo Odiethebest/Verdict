@@ -76,7 +76,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="Human" width="120" align="center">
+      <el-table-column label="Human" width="130" align="center">
         <template #default="{ row }">
           <el-input-number
             v-model="(row as EvalResult).human_score"
@@ -84,8 +84,9 @@
             :max="1"
             :step="0.01"
             :precision="2"
+            :placeholder="!(row as EvalResult).human_score ? '—' : undefined"
             size="small"
-            style="width:90px"
+            style="width:100px"
             @change="(val: number | null) => onFeedbackChange(row as EvalResult, val)"
           />
         </template>
@@ -106,6 +107,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { EvalResult, Variant, TestCase } from '@/types'
 import { submitFeedback } from '@/api/results'
 
@@ -151,6 +153,11 @@ async function onFeedbackChange(row: EvalResult, val: number | null) {
 }
 
 async function onGoldenChange(row: EvalResult, val: boolean) {
+  if (val && (!row.human_score || row.human_score <= 0)) {
+    ElMessage({ type: 'warning', message: 'Set a human score before marking as golden' })
+    row.is_golden = false
+    return
+  }
   await submitFeedback(row.id, { human_score: row.human_score ?? 0, is_golden: val })
 }
 </script>
