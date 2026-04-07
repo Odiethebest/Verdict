@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -49,7 +52,7 @@ class ExperimentResponse(BaseModel):
     dataset_id: int
     status: str
     created_at: datetime
-    completed_at: datetime | None
+    completed_at: Optional[datetime]
 
 
 class ExperimentDetailResponse(BaseModel):
@@ -58,6 +61,6 @@ class ExperimentDetailResponse(BaseModel):
     dataset_id: int
     status: str
     created_at: datetime
-    completed_at: datetime | None
+    completed_at: Optional[datetime]
     variants: list[VariantResponse]
     leaderboard: list[LeaderboardEntry]

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from sqlalchemy import ForeignKey, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,7 +18,7 @@ class TestCase(Base):
     input: Mapped[str] = mapped_column(Text, nullable=False)
     reference_output: Mapped[str] = mapped_column(Text, nullable=False)
     # 'metadata' is reserved by DeclarativeBase; use 'metadata_' with explicit column name
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+    metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSON, nullable=True)
 
-    dataset: Mapped["Dataset"] = relationship(back_populates="test_cases")
-    eval_results: Mapped[list["EvalResult"]] = relationship(back_populates="test_case")
+    dataset: Mapped[Dataset] = relationship(back_populates="test_cases")
+    eval_results: Mapped[list[EvalResult]] = relationship(back_populates="test_case")

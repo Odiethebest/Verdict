@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -14,7 +17,7 @@ class DimensionScoreResponse(BaseModel):
     id: int
     dimension_id: int
     score: float
-    reasoning: str | None
+    reasoning: Optional[str]
 
 
 class EvalResultResponse(BaseModel):
@@ -24,11 +27,11 @@ class EvalResultResponse(BaseModel):
     variant_id: int
     test_case_id: int
     raw_output: str
-    rouge_score: float | None
-    judge_score: float | None
-    judge_reasoning: str | None
-    exact_match: bool | None
-    human_score: float | None
+    rouge_score: Optional[float]
+    judge_score: Optional[float]
+    judge_reasoning: Optional[str]
+    exact_match: Optional[bool]
+    human_score: Optional[float]
     is_golden: bool
     created_at: datetime
     dimension_scores: list[DimensionScoreResponse]

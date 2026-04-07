@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,5 +18,5 @@ class Variant(Base):
     system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     temperature: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
-    experiment: Mapped["Experiment"] = relationship(back_populates="variants")
-    eval_results: Mapped[list["EvalResult"]] = relationship(back_populates="variant")
+    experiment: Mapped[Experiment] = relationship(back_populates="variants")
+    eval_results: Mapped[list[EvalResult]] = relationship(back_populates="variant")

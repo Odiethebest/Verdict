@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import enum
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,15 +31,15 @@ class Experiment(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    completed_at: Mapped[datetime | None] = mapped_column(
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
-    dataset: Mapped["Dataset"] = relationship()
-    variants: Mapped[list["Variant"]] = relationship(
+    dataset: Mapped[Dataset] = relationship()
+    variants: Mapped[list[Variant]] = relationship(
         back_populates="experiment", cascade="all, delete-orphan"
     )
-    experiment_dimensions: Mapped[list["ExperimentDimension"]] = relationship(
+    experiment_dimensions: Mapped[list[ExperimentDimension]] = relationship(
         back_populates="experiment", cascade="all, delete-orphan"
     )
 
@@ -51,5 +54,5 @@ class ExperimentDimension(Base):
         ForeignKey("dimensions.id", ondelete="CASCADE"), primary_key=True
     )
 
-    experiment: Mapped["Experiment"] = relationship(back_populates="experiment_dimensions")
-    dimension: Mapped["Dimension"] = relationship(back_populates="experiment_dimensions")
+    experiment: Mapped[Experiment] = relationship(back_populates="experiment_dimensions")
+    dimension: Mapped[Dimension] = relationship(back_populates="experiment_dimensions")

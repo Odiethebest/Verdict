@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from openai import AsyncOpenAI
 from sqlalchemy import select
@@ -34,7 +37,7 @@ async def _call_llm_with_retry(
 ) -> str:
     """Call the OpenAI chat completion API with exponential backoff on 429."""
     max_attempts = 3
-    last_exc: Exception | None = None
+    last_exc: Optional[Exception] = None
 
     for attempt in range(max_attempts):
         async with semaphore:

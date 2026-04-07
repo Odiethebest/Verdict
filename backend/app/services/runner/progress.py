@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from redis.asyncio import Redis
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession

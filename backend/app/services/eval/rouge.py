@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from rouge_score import rouge_scorer as _rouge_scorer
 
 

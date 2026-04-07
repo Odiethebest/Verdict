@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 class VerdictError(Exception):
     """Base exception for all Verdict domain errors."""
 

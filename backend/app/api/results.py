@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,5 +32,12 @@ async def submit_feedback(
     eval_result.is_golden = body.is_golden
 
     await db.commit()
-    await db.refresh(eval_result)
+
+    # Re-query with eager loading to avoid lazy-load greenlet issues
+    row = await db.execute(
+        select(EvalResult)
+        .where(EvalResult.id == result_id)
+        .options(selectinload(EvalResult.dimension_scores))
+    )
+    eval_result = row.scalar_one()
     return EvalResultResponse.model_validate(eval_result)

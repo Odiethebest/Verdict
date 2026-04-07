@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class DatasetCreate(BaseModel):
     name: str
-    description: str | None = None
+    description: Optional[str] = None
 
 
 class DatasetResponse(BaseModel):
@@ -14,14 +16,14 @@ class DatasetResponse(BaseModel):
 
     id: int
     name: str
-    description: str | None
+    description: Optional[str]
     created_at: datetime
 
 
 class TestCaseCreate(BaseModel):
     input: str
     reference_output: str
-    metadata: dict | None = None
+    metadata: Optional[dict] = None
 
 
 class TestCaseBulkCreate(BaseModel):
@@ -35,7 +37,7 @@ class TestCaseResponse(BaseModel):
     dataset_id: int
     input: str
     reference_output: str
-    metadata: dict | None = Field(default=None)
+    metadata: Optional[dict] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod

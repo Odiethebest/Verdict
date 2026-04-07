@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, Float, String, Text, func
@@ -20,9 +22,9 @@ class Dimension(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    experiment_dimensions: Mapped[list["ExperimentDimension"]] = relationship(
+    experiment_dimensions: Mapped[list[ExperimentDimension]] = relationship(
         back_populates="dimension"
     )
-    dimension_scores: Mapped[list["DimensionScore"]] = relationship(
+    dimension_scores: Mapped[list[DimensionScore]] = relationship(
         back_populates="dimension"
     )

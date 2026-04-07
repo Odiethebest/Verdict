@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -61,7 +63,7 @@ async def update_dimension(
     return DimensionResponse.model_validate(dimension)
 
 
-@router.delete("/{dimension_id}", status_code=204)
+@router.delete("/{dimension_id}", status_code=204, response_model=None)
 async def delete_dimension(
     dimension_id: int, db: AsyncSession = Depends(get_db)
 ) -> None:

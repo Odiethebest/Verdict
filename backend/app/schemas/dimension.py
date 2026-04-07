@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -17,13 +20,13 @@ class DimensionCreate(BaseModel):
 
 
 class DimensionUpdate(BaseModel):
-    name: str | None = None
-    weight: float | None = None
-    scorer_prompt: str | None = None
+    name: Optional[str] = None
+    weight: Optional[float] = None
+    scorer_prompt: Optional[str] = None
 
     @field_validator("weight")
     @classmethod
-    def weight_in_range(cls, v: float | None) -> float | None:
+    def weight_in_range(cls, v: Optional[float]) -> Optional[float]:
         if v is not None and not (0.0 < v <= 1.0):
             raise ValueError("weight must be in (0.0, 1.0]")
         return v
