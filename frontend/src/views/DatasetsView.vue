@@ -1,103 +1,177 @@
 <template>
-  <div class="page">
-    <div class="page-header">
-      <h1 class="page-title">Datasets</h1>
-      <el-button type="primary" @click="showCreate = true" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-        New dataset
-      </el-button>
-    </div>
+  <MasterDetail>
+    <template #master>
+      <SectionHeader title="Datasets" :count="store.datasets.length" />
 
-    <!-- Loading -->
-    <div v-if="store.loading" class="grid-2">
-      <el-skeleton v-for="i in 3" :key="i" animated class="card" style="padding:20px">
-        <template #template>
-          <el-skeleton-item variant="h3" style="width:60%;margin-bottom:8px" />
-          <el-skeleton-item variant="text" style="width:90%" />
-          <el-skeleton-item variant="text" style="width:40%;margin-top:12px" />
-        </template>
-      </el-skeleton>
-    </div>
+      <button class="new-btn" @click="showCreate">
+        + New dataset
+      </button>
 
-    <!-- Empty state -->
-    <div v-else-if="store.datasets.length === 0" class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-      </svg>
-      <p>No datasets yet — upload your first test cases</p>
-      <el-button type="primary" @click="showCreate = true" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-        Create dataset
-      </el-button>
-    </div>
+      <!-- Loading -->
+      <div v-if="store.loading" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <el-skeleton v-for="i in 3" :key="i" animated style="height:58px;border-radius:8px" />
+      </div>
 
-    <!-- Dataset grid -->
-    <div v-else class="grid-2">
-      <div v-for="ds in store.datasets" :key="ds.id" class="card">
-        <div class="ds-header">
-          <span class="ds-name">{{ ds.name }}</span>
-          <span class="ds-date">{{ formatDate(ds.created_at) }}</span>
-        </div>
-        <p v-if="ds.description" class="ds-desc">{{ ds.description }}</p>
-        <div class="ds-footer">
-          <el-button size="small" @click="openUpload(ds)">Upload cases</el-button>
+      <!-- Empty -->
+      <div v-else-if="store.datasets.length === 0" style="margin-top:32px;text-align:center;color:var(--text-secondary);font-size:13px">
+        No datasets yet
+      </div>
+
+      <!-- List -->
+      <div v-else class="item-list">
+        <div
+          v-for="ds in store.datasets"
+          :key="ds.id"
+          class="item-row"
+          :class="{ active: selectedDataset?.id === ds.id && panelMode === 'detail' }"
+          @click="selectDataset(ds)"
+        >
+          <div class="item-main">
+            <span class="item-name">{{ ds.name }}</span>
+            <span class="item-meta">{{ caseCount(ds.id) }}</span>
+          </div>
+          <div v-if="ds.description" class="item-sub">{{ ds.description }}</div>
         </div>
       </div>
-    </div>
+    </template>
 
-    <!-- Create dialog -->
-    <el-dialog v-model="showCreate" title="New dataset" width="480px" :close-on-click-modal="false">
-      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-position="top">
-        <el-form-item label="Name" prop="name">
-          <el-input v-model="createForm.name" placeholder="e.g. RAG Q&A v1" />
-        </el-form-item>
-        <el-form-item label="Description">
-          <el-input v-model="createForm.description" type="textarea" :rows="2" placeholder="Optional" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showCreate = false">Cancel</el-button>
-        <el-button type="primary" :loading="creating" @click="handleCreate" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-          Create
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- Upload cases dialog -->
-    <el-dialog v-model="showUpload" :title="`Upload cases — ${activeDataset?.name}`" width="560px" :close-on-click-modal="false">
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
-        Paste a JSON array of objects with <code>input</code> and <code>reference_output</code> fields.
-      </p>
-      <el-input
-        v-model="casesJson"
-        type="textarea"
-        :rows="10"
-        placeholder='[{"input": "Question?", "reference_output": "Answer."}]'
-        :class="{ 'is-error': jsonError }"
+    <template #detail>
+      <!-- Placeholder -->
+      <PanelPlaceholder
+        v-if="panelMode === 'placeholder'"
+        icon="dataset"
+        title="Select a dataset"
+        subtitle="Or create a new one to upload test cases"
       />
-      <p v-if="jsonError" style="color:#8B2E2E;font-size:12px;margin-top:6px">{{ jsonError }}</p>
-      <template #footer>
-        <el-button @click="showUpload = false">Cancel</el-button>
-        <el-button type="primary" :loading="uploading" @click="handleUpload" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-          Upload
-        </el-button>
-      </template>
-    </el-dialog>
-  </div>
+
+      <!-- Create form -->
+      <div v-else-if="panelMode === 'create'" class="panel-form">
+        <div class="panel-form-header">
+          <span class="panel-form-title">New dataset</span>
+          <button class="close-btn" @click="closePanel">×</button>
+        </div>
+        <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-position="top">
+          <el-form-item label="Name" prop="name">
+            <el-input v-model="createForm.name" placeholder="e.g. RAG Q&A v1" />
+          </el-form-item>
+          <el-form-item label="Description">
+            <el-input v-model="createForm.description" type="textarea" :rows="2" placeholder="Optional" />
+          </el-form-item>
+        </el-form>
+        <div class="panel-form-actions">
+          <el-button type="primary" :loading="saving" @click="handleCreate" style="background:var(--matcha-600);border-color:var(--matcha-600)">
+            Create dataset
+          </el-button>
+        </div>
+      </div>
+
+      <!-- Dataset detail -->
+      <div v-else-if="panelMode === 'detail' && selectedDataset" class="panel-detail">
+        <div class="detail-header">
+          <div>
+            <h2 class="detail-title">{{ selectedDataset.name }}</h2>
+            <p v-if="selectedDataset.description" class="detail-desc">{{ selectedDataset.description }}</p>
+            <p class="detail-date">Created {{ formatDate(selectedDataset.created_at) }}</p>
+          </div>
+        </div>
+
+        <!-- Test cases -->
+        <div class="cases-section">
+          <div class="cases-header">
+            <span class="cases-title">Test cases</span>
+            <span class="badge" style="margin-left:8px">{{ currentCases.length }}</span>
+          </div>
+          <div v-if="loadingCases" style="color:var(--text-secondary);font-size:13px">Loading...</div>
+          <div v-else-if="currentCases.length === 0" style="color:var(--text-secondary);font-size:13px;margin-top:8px">
+            No test cases yet — upload some below.
+          </div>
+          <div v-else class="cases-list">
+            <div v-for="tc in currentCases" :key="tc.id" class="case-card">
+              <p class="case-input">{{ tc.input }}</p>
+              <p class="case-ref">{{ tc.reference_output }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider" />
+
+        <!-- Upload section -->
+        <div class="upload-section">
+          <div class="cases-title">Upload cases</div>
+          <p class="upload-hint">Paste a JSON array with <code>input</code> and <code>reference_output</code> fields.</p>
+          <el-input
+            v-model="casesJson"
+            type="textarea"
+            :rows="5"
+            placeholder='[{"input": "Question?", "reference_output": "Answer."}]'
+          />
+          <p v-if="jsonError" class="json-error">{{ jsonError }}</p>
+          <div style="margin-top:10px;display:flex;justify-content:flex-end">
+            <el-button type="primary" :loading="uploading" @click="handleUpload" style="background:var(--matcha-600);border-color:var(--matcha-600)">
+              Upload
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </MasterDetail>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import MasterDetail from '@/components/MasterDetail.vue'
+import SectionHeader from '@/components/SectionHeader.vue'
+import PanelPlaceholder from '@/components/PanelPlaceholder.vue'
 import { useDatasetsStore } from '@/stores/datasets'
 import type { Dataset } from '@/types'
 
 const store = useDatasetsStore()
-
 onMounted(() => store.fetchAll())
 
-const showCreate = ref(false)
-const creating = ref(false)
+type PanelMode = 'placeholder' | 'create' | 'detail'
+const panelMode = ref<PanelMode>('placeholder')
+const selectedDataset = ref<Dataset | null>(null)
+const loadingCases = ref(false)
+
+const currentCases = computed(() =>
+  selectedDataset.value ? (store.casesByDataset[selectedDataset.value.id] ?? []) : [],
+)
+
+function caseCount(datasetId: number): string {
+  const cases = store.casesByDataset[datasetId]
+  if (!cases) return ''
+  return `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`
+}
+
+async function selectDataset(ds: Dataset) {
+  selectedDataset.value = ds
+  panelMode.value = 'detail'
+  if (!store.casesByDataset[ds.id]) {
+    loadingCases.value = true
+    try {
+      await store.fetchCases(ds.id)
+    } finally {
+      loadingCases.value = false
+    }
+  }
+}
+
+function showCreate() {
+  selectedDataset.value = null
+  createForm.name = ''
+  createForm.description = ''
+  panelMode.value = 'create'
+}
+
+function closePanel() {
+  panelMode.value = selectedDataset.value ? 'detail' : 'placeholder'
+}
+
+// Create form
 const createFormRef = ref<FormInstance>()
+const saving = ref(false)
 const createForm = reactive({ name: '', description: '' })
 const createRules: FormRules = {
   name: [{ required: true, message: 'Name is required', trigger: 'blur' }],
@@ -105,30 +179,20 @@ const createRules: FormRules = {
 
 async function handleCreate() {
   await createFormRef.value?.validate()
-  creating.value = true
+  saving.value = true
   try {
-    await store.create({ name: createForm.name, description: createForm.description || undefined })
+    const ds = await store.create({ name: createForm.name, description: createForm.description || undefined })
     ElMessage({ type: 'success', message: 'Dataset created' })
-    showCreate.value = false
-    createForm.name = ''
-    createForm.description = ''
+    await selectDataset(ds)
   } finally {
-    creating.value = false
+    saving.value = false
   }
 }
 
-const showUpload = ref(false)
-const uploading = ref(false)
-const activeDataset = ref<Dataset | null>(null)
+// Upload cases
 const casesJson = ref('')
 const jsonError = ref('')
-
-function openUpload(ds: Dataset) {
-  activeDataset.value = ds
-  casesJson.value = ''
-  jsonError.value = ''
-  showUpload.value = true
-}
+const uploading = ref(false)
 
 async function handleUpload() {
   jsonError.value = ''
@@ -142,9 +206,9 @@ async function handleUpload() {
   }
   uploading.value = true
   try {
-    const result = await store.uploadCases(activeDataset.value!.id, cases)
+    const result = await store.uploadCases(selectedDataset.value!.id, cases)
     ElMessage({ type: 'success', message: `Uploaded ${result.length} cases` })
-    showUpload.value = false
+    casesJson.value = ''
   } finally {
     uploading.value = false
   }
@@ -156,44 +220,90 @@ function formatDate(iso: string) {
 </script>
 
 <style scoped>
-.grid-2 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+.new-btn {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  margin-bottom: 14px;
+  border: 1px solid var(--matcha-400);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--matcha-600);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.new-btn:hover { background: var(--matcha-50); }
+
+.item-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+
+.item-row {
+  padding: 10px 10px 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-left: 3px solid transparent;
+}
+.item-row:hover { background: var(--matcha-50); }
+.item-row.active {
+  background: var(--matcha-50);
+  border-left-color: var(--matcha-600);
 }
 
-.ds-header {
+.item-main {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 6px;
 }
+.item-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.item-meta { font-size: 11px; color: var(--text-secondary); }
+.item-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.ds-name {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--text-primary);
+/* Panel form */
+.panel-form { max-width: 520px; }
+.panel-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
+.panel-form-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.close-btn {
+  width: 28px; height: 28px;
+  border: none; background: none; cursor: pointer;
+  font-size: 18px; color: var(--text-secondary);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.close-btn:hover { background: var(--matcha-50); color: var(--text-primary); }
+.panel-form-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
 
-.ds-date {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
+/* Detail panel */
+.panel-detail { max-width: 640px; }
+.detail-header { margin-bottom: 20px; }
+.detail-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.detail-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+.detail-date { font-size: 12px; color: var(--text-secondary); }
 
-.ds-desc {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 14px;
-  line-height: 1.5;
-}
+.cases-section { margin-bottom: 20px; }
+.cases-header { display: flex; align-items: center; margin-bottom: 12px; }
+.cases-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
 
-.ds-footer {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 0.5px solid var(--border);
+.cases-list { display: flex; flex-direction: column; gap: 8px; }
+.case-card {
+  padding: 10px 12px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
 }
+.case-input { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+.case-ref { font-size: 12px; color: var(--text-secondary); }
 
-@media (max-width: 900px) {
-  .grid-2 { grid-template-columns: 1fr; }
-}
+.divider { height: 0.5px; background: var(--border); margin: 20px 0; }
+
+.upload-section {}
+.upload-hint { font-size: 12px; color: var(--text-secondary); margin: 6px 0 8px; }
+.upload-hint code { background: var(--matcha-50); padding: 1px 4px; border-radius: 3px; }
+.json-error { font-size: 12px; color: #8B2E2E; margin-top: 4px; }
 </style>
