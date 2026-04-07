@@ -21,11 +21,19 @@ import AppSidebar from '@/components/AppSidebar.vue'
 <style scoped>
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 .app-main {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* Give the RouterView's child full height */
+.app-main :deep(> *) {
+  flex: 1;
+  min-height: 0;
 }
 </style>
