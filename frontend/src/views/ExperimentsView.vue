@@ -1,144 +1,125 @@
 <template>
-  <div class="page">
+  <div class="page exp-page">
     <div class="page-header">
       <h1 class="page-title">Experiments</h1>
-      <el-button type="primary" @click="openWizard" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-        New experiment
-      </el-button>
+      <button class="new-btn-pill" @click="toggleCreate">
+        <span v-if="!showForm">+ New experiment</span>
+        <span v-else>Cancel</span>
+      </button>
     </div>
 
-    <!-- Loading skeleton -->
-    <div v-if="store.loading" style="display:flex;flex-direction:column;gap:8px">
-      <el-skeleton v-for="i in 3" :key="i" animated class="exp-row">
-        <template #template>
-          <div style="display:flex;align-items:center;gap:16px">
-            <el-skeleton-item variant="h3" style="width:200px" />
-            <el-skeleton-item variant="button" style="width:80px" />
-            <el-skeleton-item variant="button" style="width:80px;margin-left:auto" />
+    <!-- Inline create form (collapsible) -->
+    <div class="create-form-wrap" :class="{ open: showForm }">
+      <div class="create-form-inner card">
+        <div class="create-form-header">
+          <span style="font-size:15px;font-weight:600">New experiment</span>
+        </div>
+
+        <div class="form-grid">
+          <!-- Name + Dataset row -->
+          <el-form ref="formRef" :model="form" :rules="formRules" label-position="top" style="display:contents">
+            <el-form-item label="Name" prop="name" class="form-col">
+              <el-input v-model="form.name" placeholder="e.g. Prompt A vs B" />
+            </el-form-item>
+            <el-form-item label="Dataset" prop="dataset_id" class="form-col">
+              <el-select v-model="form.dataset_id" placeholder="Select dataset" style="width:100%">
+                <el-option v-for="ds in datasetsStore.datasets" :key="ds.id" :label="ds.name" :value="ds.id" />
+              </el-select>
+            </el-form-item>
+          </el-form>
+
+          <!-- Dimensions -->
+          <div class="form-full">
+            <div class="form-label">Dimensions</div>
+            <div class="dim-chips">
+              <label
+                v-for="dim in dimensionsStore.dimensions"
+                :key="dim.id"
+                class="dim-chip"
+                :class="{ selected: form.dimension_ids.includes(dim.id) }"
+              >
+                <input type="checkbox" :value="dim.id" v-model="form.dimension_ids" style="display:none" />
+                {{ dim.name }}
+              </label>
+            </div>
           </div>
-        </template>
-      </el-skeleton>
-    </div>
 
-    <!-- Empty state -->
-    <div v-else-if="store.experiments.length === 0" class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
-      </svg>
-      <p>No experiments yet — run your first evaluation</p>
-      <el-button type="primary" @click="openWizard" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-        New experiment
-      </el-button>
-    </div>
+          <!-- Variants -->
+          <div class="form-full">
+            <div class="form-label-row">
+              <span class="form-label">Variants</span>
+              <button class="add-variant-btn" @click="addVariant">+ Add variant</button>
+            </div>
+            <div v-if="variantError" class="variant-error">Add at least one variant with a system prompt.</div>
+            <div class="variants-list">
+              <div v-for="(v, idx) in form.variants" :key="idx" class="variant-row">
+                <div class="variant-row-top">
+                  <el-input v-model="v.name" placeholder="Name" style="width:140px" />
+                  <el-select v-model="v.model" style="width:160px">
+                    <el-option label="gpt-4o-mini" value="gpt-4o-mini" />
+                    <el-option label="gpt-4o" value="gpt-4o" />
+                    <el-option label="claude-3-5-haiku-20241022" value="claude-3-5-haiku-20241022" />
+                  </el-select>
+                  <span style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Temp {{ v.temperature.toFixed(1) }}</span>
+                  <el-slider v-model="v.temperature" :min="0" :max="2" :step="0.1" style="width:80px" />
+                  <button v-if="form.variants.length > 1" class="remove-variant-btn" @click="form.variants.splice(idx, 1)">×</button>
+                </div>
+                <el-input v-model="v.system_prompt" type="textarea" :rows="2" placeholder="System prompt..." style="margin-top:6px" />
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <!-- Experiment list -->
-    <div v-else style="display:flex;flex-direction:column;gap:6px">
-      <div v-for="exp in store.experiments" :key="exp.id" class="exp-row">
-        <div class="exp-left">
-          <span class="exp-name">{{ exp.name }}</span>
-          <span class="exp-date">{{ formatDate(exp.created_at) }}</span>
-        </div>
-        <div class="exp-center">
-          <span class="badge">Dataset #{{ exp.dataset_id }}</span>
-        </div>
-        <div class="exp-right">
-          <span :class="['status-badge', exp.status]">
-            <span v-if="exp.status === 'running'" class="pulse-dot" />
-            {{ exp.status }}
-          </span>
-          <el-button size="small" @click="$router.push({ name: 'experiment-detail', params: { id: exp.id } })">
-            View
+        <div class="create-form-footer">
+          <el-button @click="toggleCreate">Cancel</el-button>
+          <el-button type="primary" :loading="creating" @click="handleCreate" style="background:var(--matcha-600);border-color:var(--matcha-600)">
+            Create &amp; run →
           </el-button>
         </div>
       </div>
     </div>
 
-    <!-- Wizard dialog -->
-    <el-dialog v-model="showWizard" title="New experiment" width="600px" :close-on-click-modal="false" @close="resetWizard">
-      <el-steps :active="wizardStep" finish-status="success" simple style="margin-bottom:24px">
-        <el-step title="Details" />
-        <el-step title="Dimensions" />
-        <el-step title="Variants" />
-      </el-steps>
+    <!-- Loading -->
+    <div v-if="store.loading" style="display:flex;flex-direction:column;gap:8px">
+      <el-skeleton v-for="i in 3" :key="i" animated class="exp-card" style="height:88px" />
+    </div>
 
-      <!-- Step 1 -->
-      <div v-if="wizardStep === 0">
-        <el-form ref="step1Ref" :model="wiz" :rules="step1Rules" label-position="top">
-          <el-form-item label="Experiment name" prop="name">
-            <el-input v-model="wiz.name" placeholder="e.g. Prompt A vs B" />
-          </el-form-item>
-          <el-form-item label="Dataset" prop="dataset_id">
-            <el-select v-model="wiz.dataset_id" placeholder="Select a dataset" style="width:100%" @visible-change="(v: boolean) => v && datasetsStore.fetchAll()">
-              <el-option v-for="ds in datasetsStore.datasets" :key="ds.id" :label="ds.name" :value="ds.id" />
-            </el-select>
-          </el-form-item>
-        </el-form>
-      </div>
+    <!-- Empty -->
+    <div v-else-if="store.experiments.length === 0 && !showForm" class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+      </svg>
+      <p>No experiments yet — run your first evaluation</p>
+      <button class="new-btn-pill" @click="toggleCreate">+ New experiment</button>
+    </div>
 
-      <!-- Step 2 -->
-      <div v-else-if="wizardStep === 1">
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Select the dimensions to score against.</p>
-        <el-checkbox-group v-model="wiz.dimension_ids">
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <el-checkbox
-              v-for="dim in dimensionsStore.dimensions"
-              :key="dim.id"
-              :value="dim.id"
-              style="margin-right:0"
-            >
-              <span style="font-weight:500">{{ dim.name }}</span>
-              <span class="badge" style="margin-left:8px">{{ (dim.weight * 100).toFixed(0) }}%</span>
-            </el-checkbox>
-          </div>
-        </el-checkbox-group>
-        <p v-if="dimensionsStore.dimensions.length === 0" style="color:var(--text-secondary);font-size:13px">
-          No dimensions yet. <RouterLink to="/dimensions">Create one first.</RouterLink>
-        </p>
-      </div>
-
-      <!-- Step 3 -->
-      <div v-else-if="wizardStep === 2">
-        <div v-for="(variant, idx) in wiz.variants" :key="idx" class="variant-block">
-          <div class="variant-block-header">
-            <span style="font-weight:500;font-size:13px">Variant {{ idx + 1 }}</span>
-            <button v-if="wiz.variants.length > 1" class="icon-btn danger" @click="wiz.variants.splice(idx, 1)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-          <el-form label-position="top">
-            <el-form-item label="Name">
-              <el-input v-model="variant.name" :placeholder="`Variant ${idx + 1}`" />
-            </el-form-item>
-            <el-form-item label="Model">
-              <el-select v-model="variant.model" style="width:100%">
-                <el-option label="gpt-4o-mini" value="gpt-4o-mini" />
-                <el-option label="gpt-4o" value="gpt-4o" />
-                <el-option label="claude-3-5-haiku-20241022" value="claude-3-5-haiku-20241022" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="System prompt">
-              <el-input v-model="variant.system_prompt" type="textarea" :rows="3" placeholder="You are a helpful assistant..." />
-            </el-form-item>
-            <el-form-item :label="`Temperature: ${variant.temperature}`">
-              <el-slider v-model="variant.temperature" :min="0" :max="2" :step="0.1" show-stops style="flex:1" />
-            </el-form-item>
-          </el-form>
+    <!-- Experiment cards -->
+    <div v-else class="exp-list">
+      <div
+        v-for="exp in store.experiments"
+        :key="exp.id"
+        class="exp-card card"
+        @click="$router.push({ name: 'experiment-detail', params: { id: exp.id } })"
+      >
+        <div class="exp-card-top">
+          <span class="exp-name">{{ exp.name }}</span>
+          <span :class="['status-badge', exp.status]">
+            <span v-if="exp.status === 'running'" class="pulse-dot" />
+            {{ exp.status }}
+          </span>
         </div>
-        <el-button style="width:100%;margin-top:8px" @click="addVariantSlot">+ Add another variant</el-button>
+        <div class="exp-card-mid">
+          <span class="badge">Dataset #{{ exp.dataset_id }}</span>
+          <span class="tag">{{ (exp.variants ?? []).length }} {{ (exp.variants ?? []).length === 1 ? 'variant' : 'variants' }}</span>
+        </div>
+        <div class="exp-card-bot">
+          <span class="exp-date">{{ formatDate(exp.created_at) }}</span>
+          <span v-if="exp.status === 'completed' && (exp.leaderboard ?? []).length" class="exp-best">
+            Best: {{ exp.leaderboard![0].aggregate_score.toFixed(2) }} — {{ exp.leaderboard![0].variant_name }}
+          </span>
+        </div>
       </div>
-
-      <template #footer>
-        <el-button v-if="wizardStep > 0" @click="wizardStep--">Back</el-button>
-        <el-button v-if="wizardStep < 2" type="primary" @click="nextStep" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-          Next
-        </el-button>
-        <el-button v-else type="primary" :loading="creating" @click="handleFinish" style="background:var(--matcha-600);border-color:var(--matcha-600)">
-          Create &amp; go
-        </el-button>
-      </template>
-    </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -156,83 +137,75 @@ const store = useExperimentsStore()
 const datasetsStore = useDatasetsStore()
 const dimensionsStore = useDimensionsStore()
 
-let pollInterval: ReturnType<typeof setInterval>
-
 onMounted(() => {
   store.fetchAll()
   datasetsStore.fetchAll()
   dimensionsStore.fetchAll()
   pollInterval = setInterval(() => {
-    const hasRunning = store.experiments.some((e) => e.status === 'running')
-    if (hasRunning) store.fetchAll()
+    if (store.experiments.some((e) => e.status === 'running')) store.fetchAll()
   }, 5000)
 })
 
+let pollInterval: ReturnType<typeof setInterval>
 onUnmounted(() => clearInterval(pollInterval))
 
-// Wizard state
-const showWizard = ref(false)
-const wizardStep = ref(0)
+const showForm = ref(false)
 const creating = ref(false)
-const step1Ref = ref<FormInstance>()
+const variantError = ref(false)
+const formRef = ref<FormInstance>()
 
-const wiz = reactive({
+const form = reactive({
   name: '',
   dataset_id: null as number | null,
   dimension_ids: [] as number[],
   variants: [{ name: 'Variant 1', model: 'gpt-4o-mini', system_prompt: '', temperature: 0 }],
 })
 
-const step1Rules: FormRules = {
-  name: [{ required: true, message: 'Name is required', trigger: 'blur' }],
-  dataset_id: [{ required: true, message: 'Dataset is required', trigger: 'change' }],
+const formRules: FormRules = {
+  name: [{ required: true, message: 'Required', trigger: 'blur' }],
+  dataset_id: [{ required: true, message: 'Required', trigger: 'change' }],
 }
 
-function openWizard() {
-  resetWizard()
-  showWizard.value = true
+function toggleCreate() {
+  showForm.value = !showForm.value
+  if (!showForm.value) resetForm()
 }
 
-function resetWizard() {
-  wizardStep.value = 0
-  wiz.name = ''
-  wiz.dataset_id = null
-  wiz.dimension_ids = []
-  wiz.variants = [{ name: 'Variant 1', model: 'gpt-4o-mini', system_prompt: '', temperature: 0 }]
+function resetForm() {
+  form.name = ''
+  form.dataset_id = null
+  form.dimension_ids = []
+  form.variants = [{ name: 'Variant 1', model: 'gpt-4o-mini', system_prompt: '', temperature: 0 }]
+  variantError.value = false
 }
 
-async function nextStep() {
-  if (wizardStep.value === 0) {
-    await step1Ref.value?.validate()
-  }
-  if (wizardStep.value === 1 && wiz.dimension_ids.length === 0) {
-    ElMessage({ type: 'warning', message: 'Select at least one dimension' })
-    return
-  }
-  wizardStep.value++
+function addVariant() {
+  form.variants.push({ name: `Variant ${form.variants.length + 1}`, model: 'gpt-4o-mini', system_prompt: '', temperature: 0 })
 }
 
-function addVariantSlot() {
-  wiz.variants.push({ name: `Variant ${wiz.variants.length + 1}`, model: 'gpt-4o-mini', system_prompt: '', temperature: 0 })
-}
-
-async function handleFinish() {
-  if (wiz.variants.some((v) => !v.system_prompt.trim())) {
-    ElMessage({ type: 'warning', message: 'All variants need a system prompt' })
+async function handleCreate() {
+  await formRef.value?.validate()
+  variantError.value = false
+  if (form.variants.some((v) => !v.system_prompt.trim())) {
+    variantError.value = true
     return
   }
   creating.value = true
   try {
     const exp = await store.create({
-      name: wiz.name,
-      dataset_id: wiz.dataset_id!,
-      dimension_ids: wiz.dimension_ids,
+      name: form.name,
+      dataset_id: form.dataset_id!,
+      dimension_ids: form.dimension_ids,
     })
-    for (const v of wiz.variants) {
+    for (const v of form.variants) {
       await store.addVariant(exp.id, v)
     }
-    ElMessage({ type: 'success', message: 'Experiment created' })
-    showWizard.value = false
+    // Trigger the run immediately
+    const { triggerRun } = await import('@/api/experiments')
+    await triggerRun(exp.id)
+    ElMessage({ type: 'success', message: 'Experiment created and run started' })
+    showForm.value = false
+    resetForm()
     router.push({ name: 'experiment-detail', params: { id: exp.id } })
   } finally {
     creating.value = false
@@ -245,50 +218,139 @@ function formatDate(iso: string) {
 </script>
 
 <style scoped>
-.exp-row {
+.exp-page { padding: 28px 36px; max-width: 860px; }
+
+.page-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  background: var(--card);
-  border: 0.5px solid var(--border);
-  border-radius: 10px;
-  transition: box-shadow 0.15s;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
-.exp-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.page-title { font-size: 22px; font-weight: 600; }
 
-.exp-left { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.exp-name { font-weight: 600; font-size: 14px; }
-.exp-date { font-size: 12px; color: var(--text-secondary); }
+.new-btn-pill {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--matcha-600);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.new-btn-pill:hover { background: var(--matcha-800); }
 
-.exp-center { display: flex; gap: 6px; }
+/* Collapsible create form */
+.create-form-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+.create-form-wrap.open {
+  grid-template-rows: 1fr;
+  margin-bottom: 20px;
+}
+.create-form-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.create-form-header { margin-bottom: 16px; }
+.create-form-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
-.exp-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+.form-col { grid-column: span 1; }
+.form-full { grid-column: span 2; margin-bottom: 12px; }
 
-.variant-block {
+.form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
+.form-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+
+.dim-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dim-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.12s;
+  color: var(--text-secondary);
+}
+.dim-chip.selected {
+  background: var(--matcha-100);
+  border-color: var(--matcha-400);
+  color: var(--matcha-800);
+  font-weight: 500;
+}
+
+.add-variant-btn {
+  font-size: 12px;
+  color: var(--matcha-600);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+.variant-error { font-size: 12px; color: #8B2E2E; margin-bottom: 8px; }
+
+.variants-list { display: flex; flex-direction: column; gap: 10px; }
+.variant-row {
+  padding: 12px;
   border: 0.5px solid var(--border);
   border-radius: 8px;
-  padding: 14px;
-  margin-bottom: 12px;
+  background: var(--cream);
 }
-.variant-block-header {
+.variant-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.remove-variant-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+.remove-variant-btn:hover { background: #FDEAEA; color: #8B2E2E; }
+
+/* Experiment cards */
+.exp-list { display: flex; flex-direction: column; gap: 8px; }
+.exp-card {
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.exp-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+.exp-card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
+}
+.exp-name { font-size: 15px; font-weight: 600; }
+
+.exp-card-mid { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.tag {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: #F0EDE6;
+  border-radius: 6px;
+  padding: 2px 8px;
 }
 
-.icon-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 0.5px solid var(--border);
-  background: transparent;
-  cursor: pointer;
-  color: var(--text-secondary);
-}
-.icon-btn.danger:hover { background: #FDEAEA; color: #8B2E2E; }
+.exp-card-bot { display: flex; justify-content: space-between; align-items: center; }
+.exp-date { font-size: 12px; color: var(--text-secondary); }
+.exp-best { font-size: 12px; color: var(--matcha-600); font-weight: 500; }
 </style>
