@@ -25,23 +25,28 @@ defineProps<{
 <style scoped>
 .placeholder {
   height: 100%;
-  min-height: 300px;
+  min-height: 400px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--matcha-200);
   text-align: center;
 }
+.placeholder svg {
+  width: 56px;
+  height: 56px;
+  opacity: 0.35;
+}
 .placeholder-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-secondary);
   margin-top: 4px;
 }
 .placeholder-sub {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   opacity: 0.7;
   max-width: 240px;

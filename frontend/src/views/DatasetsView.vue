@@ -130,7 +130,12 @@ import { useDatasetsStore } from '@/stores/datasets'
 import type { Dataset } from '@/types'
 
 const store = useDatasetsStore()
-onMounted(() => store.fetchAll())
+onMounted(async () => {
+  await store.fetchAll()
+  if (store.datasets.length > 0 && !selectedDataset.value) {
+    await selectDataset(store.datasets[0])
+  }
+})
 
 type PanelMode = 'placeholder' | 'create' | 'detail'
 const panelMode = ref<PanelMode>('placeholder')
@@ -256,10 +261,10 @@ function formatDate(iso: string) {
 .item-main {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
 }
 .item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
-.item-meta { font-size: 13px; color: var(--text-secondary); }
+.item-meta { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; white-space: nowrap; }
 .item-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Panel form */

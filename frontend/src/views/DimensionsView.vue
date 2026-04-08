@@ -133,7 +133,12 @@ import { useDimensionsStore } from '@/stores/dimensions'
 import type { Dimension } from '@/types'
 
 const store = useDimensionsStore()
-onMounted(() => store.fetchAll())
+onMounted(async () => {
+  await store.fetchAll()
+  if (store.dimensions.length > 0 && !selectedId.value) {
+    selectDimension(store.dimensions[0])
+  }
+})
 
 type PanelMode = 'placeholder' | 'form'
 const panelMode = ref<PanelMode>('placeholder')
@@ -248,9 +253,9 @@ async function handleDelete() {
 .item-row:hover  { background: var(--matcha-50); }
 .item-row.active { background: var(--matcha-50); border-left-color: var(--matcha-600); }
 
-.item-main { display: flex; justify-content: space-between; align-items: baseline; }
+.item-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
-.item-sub  { font-size: 13px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+.item-sub  { font-size: 13px; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 .weight-badge {
   font-size: 13px;
@@ -259,6 +264,7 @@ async function handleDelete() {
   color: var(--matcha-800);
   border-radius: 10px;
   padding: 3px 10px;
+  flex-shrink: 0;
 }
 
 .panel-form { max-width: 540px; }

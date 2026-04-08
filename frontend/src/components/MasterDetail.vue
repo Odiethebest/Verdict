@@ -17,7 +17,8 @@
   gap: 0;
 }
 .master-panel {
-  width: 320px;
+  width: 420px;
+  min-width: 380px;
   flex-shrink: 0;
   border-right: 0.5px solid var(--border);
   overflow-y: auto;
