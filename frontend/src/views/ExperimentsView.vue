@@ -9,7 +9,7 @@
     </div>
 
     <!-- Inline create form (collapsible) -->
-    <div class="create-form-wrap" :class="{ open: showForm }">
+    <div v-show="showForm" class="create-form-wrap" :class="{ open: showForm }">
       <div class="create-form-inner card">
         <div class="create-form-header">
           <span style="font-size:15px;font-weight:600">New experiment</span>
