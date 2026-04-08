@@ -1,5 +1,5 @@
 <template>
-  <el-config-provider :locale="en" size="small">
+  <el-config-provider :locale="en" size="default">
     <div class="app-layout">
       <AppSidebar />
       <main class="app-main">

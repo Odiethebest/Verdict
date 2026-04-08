@@ -79,7 +79,7 @@
         <div class="cases-section">
           <div class="cases-header">
             <span class="cases-title">Test cases</span>
-            <span class="badge" style="margin-left:8px">{{ currentCases.length }}</span>
+            <span class="badge" style="margin-left:8px;font-size:13px;padding:2px 10px">{{ currentCases.length }}</span>
           </div>
           <div v-if="loadingCases" style="color:var(--text-secondary);font-size:13px">Loading...</div>
           <div v-else-if="currentCases.length === 0" style="color:var(--text-secondary);font-size:13px;margin-top:8px">
@@ -104,10 +104,12 @@
             type="textarea"
             :rows="5"
             placeholder='[{"input": "Question?", "reference_output": "Answer."}]'
+            style="font-size:14px"
+            :input-style="{ minHeight: '120px' }"
           />
           <p v-if="jsonError" class="json-error">{{ jsonError }}</p>
           <div style="margin-top:10px;display:flex;justify-content:flex-end">
-            <el-button type="primary" :loading="uploading" @click="handleUpload" style="background:var(--matcha-600);border-color:var(--matcha-600)">
+            <el-button type="primary" :loading="uploading" @click="handleUpload" style="background:var(--matcha-600);border-color:var(--matcha-600);padding:8px 20px;font-size:14px">
               Upload
             </el-button>
           </div>
@@ -223,23 +225,23 @@ function formatDate(iso: string) {
 .new-btn {
   display: block;
   width: 100%;
-  padding: 8px 0;
+  padding: 12px 0;
   margin-bottom: 14px;
   border: 1px solid var(--matcha-400);
   border-radius: 8px;
   background: transparent;
   color: var(--matcha-600);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
 }
 .new-btn:hover { background: var(--matcha-50); }
 
-.item-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.item-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 
 .item-row {
-  padding: 10px 10px 10px 12px;
+  padding: 14px 16px;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.12s;
@@ -256,9 +258,9 @@ function formatDate(iso: string) {
   justify-content: space-between;
   align-items: baseline;
 }
-.item-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-.item-meta { font-size: 11px; color: var(--text-secondary); }
-.item-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.item-meta { font-size: 13px; color: var(--text-secondary); }
+.item-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Panel form */
 .panel-form { max-width: 520px; }
@@ -268,7 +270,7 @@ function formatDate(iso: string) {
   align-items: center;
   margin-bottom: 20px;
 }
-.panel-form-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.panel-form-title { font-size: 22px; font-weight: 500; color: var(--text-primary); }
 .close-btn {
   width: 28px; height: 28px;
   border: none; background: none; cursor: pointer;
@@ -278,32 +280,34 @@ function formatDate(iso: string) {
 }
 .close-btn:hover { background: var(--matcha-50); color: var(--text-primary); }
 .panel-form-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+.panel-form-actions :deep(.el-button) { padding: 9px 24px; font-size: 14px; }
 
 /* Detail panel */
 .panel-detail { max-width: 640px; }
 .detail-header { margin-bottom: 20px; }
-.detail-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-.detail-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
-.detail-date { font-size: 12px; color: var(--text-secondary); }
+.detail-title { font-size: 24px; font-weight: 500; margin-bottom: 4px; }
+.detail-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 4px; }
+.detail-date { font-size: 13px; color: var(--text-secondary); }
 
-.cases-section { margin-bottom: 20px; }
+.cases-section { margin-top: 24px; margin-bottom: 20px; }
 .cases-header { display: flex; align-items: center; margin-bottom: 12px; }
-.cases-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.cases-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
 
 .cases-list { display: flex; flex-direction: column; gap: 8px; }
 .case-card {
-  padding: 10px 12px;
+  padding: 16px 20px;
   border: 0.5px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--card);
+  margin-bottom: 10px;
 }
-.case-input { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
-.case-ref { font-size: 12px; color: var(--text-secondary); }
+.case-input { font-size: 15px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+.case-ref { font-size: 14px; color: var(--text-secondary); margin-top: 6px; }
 
 .divider { height: 0.5px; background: var(--border); margin: 20px 0; }
 
-.upload-section {}
-.upload-hint { font-size: 12px; color: var(--text-secondary); margin: 6px 0 8px; }
+.upload-section { margin-top: 28px; }
+.upload-hint { font-size: 14px; color: var(--text-secondary); margin: 6px 0 8px; }
 .upload-hint code { background: var(--matcha-50); padding: 1px 4px; border-radius: 3px; }
 .json-error { font-size: 12px; color: #8B2E2E; margin-top: 4px; }
 </style>

@@ -212,13 +212,13 @@ async function handleDelete() {
 .new-btn {
   display: block;
   width: 100%;
-  padding: 8px 0;
+  padding: 12px 0;
   margin-bottom: 10px;
   border: 1px solid var(--matcha-400);
   border-radius: 8px;
   background: transparent;
   color: var(--matcha-600);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -228,7 +228,7 @@ async function handleDelete() {
 .weight-bar {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 14px;
   padding: 4px 2px;
   margin-bottom: 10px;
   color: var(--text-secondary);
@@ -236,10 +236,10 @@ async function handleDelete() {
 .weight-value.ok    { color: var(--matcha-600); font-weight: 600; }
 .weight-value.over  { color: #D4800A;            font-weight: 600; }
 
-.item-list { display: flex; flex-direction: column; gap: 4px; }
+.item-list { display: flex; flex-direction: column; gap: 8px; }
 
 .item-row {
-  padding: 10px 10px 10px 12px;
+  padding: 14px 16px;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.12s;
@@ -249,21 +249,21 @@ async function handleDelete() {
 .item-row.active { background: var(--matcha-50); border-left-color: var(--matcha-600); }
 
 .item-main { display: flex; justify-content: space-between; align-items: baseline; }
-.item-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-.item-sub  { font-size: 11px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+.item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.item-sub  { font-size: 13px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
 
 .weight-badge {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   background: var(--matcha-100);
   color: var(--matcha-800);
   border-radius: 10px;
-  padding: 2px 7px;
+  padding: 3px 10px;
 }
 
 .panel-form { max-width: 540px; }
 .panel-form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.panel-form-title  { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.panel-form-title  { font-size: 22px; font-weight: 500; color: var(--text-primary); }
 
 .close-btn {
   width: 28px; height: 28px;
@@ -288,12 +288,13 @@ async function handleDelete() {
 .weight-total-row {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .weight-total-val.ok   { color: var(--matcha-600); font-weight: 500; }
 .weight-total-val.over { color: #D4800A;            font-weight: 500; }
 
 .panel-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.panel-form-actions :deep(.el-button) { padding: 9px 24px; font-size: 14px; }
 </style>
