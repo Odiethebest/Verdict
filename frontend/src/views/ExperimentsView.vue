@@ -218,7 +218,7 @@ function formatDate(iso: string) {
 </script>
 
 <style scoped>
-.exp-page { padding: 28px 36px; max-width: 860px; }
+.exp-page { padding: 28px 36px; width: 100%; }
 
 .page-header {
   display: flex;

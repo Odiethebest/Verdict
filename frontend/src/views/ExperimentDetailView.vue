@@ -355,7 +355,7 @@ onMounted(() => {
   background: var(--cream);
 }
 .page-inner {
-  max-width: 900px;
+  width: 100%;
   padding: 28px 36px;
 }
 
